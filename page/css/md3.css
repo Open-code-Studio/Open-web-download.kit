@@ -4,11 +4,11 @@
 
 :root,
 [data-theme="light"] {
-    /* Primary */
-    --md-sys-color-primary: #38608c;
+    /* Primary — #4AA26F */
+    --md-sys-color-primary: #4AA26F;
     --md-sys-color-on-primary: #ffffff;
-    --md-sys-color-primary-container: #d4e3ff;
-    --md-sys-color-on-primary-container: #001c38;
+    --md-sys-color-primary-container: #c3efd3;
+    --md-sys-color-on-primary-container: #002111;
 
     /* Secondary */
     --md-sys-color-secondary: #535f70;
@@ -45,7 +45,7 @@
 
     --md-sys-color-inverse-surface: #2f3033;
     --md-sys-color-inverse-on-surface: #f1f0f4;
-    --md-sys-color-inverse-primary: #a2c7fe;
+    --md-sys-color-inverse-primary: #4AA26F;
 
     /* Shadows */
     --md-sys-elevation-0: none;
