@@ -14,7 +14,9 @@ const STATE = {
     projects: {},           // { projectId: ProjectData }
     activeCategory: 'all',
     searchQuery: '',
-    detailProjectId: null
+    detailProjectId: null,
+    primaryColor: null,     // hex string like "#4AA26F"
+    colorTokens: {}         // { light: {primary, onPrimary, container, onContainer, inverse}, dark: {...} }
 };
 
 // ============================================================
@@ -73,11 +75,95 @@ function applyTheme() {
     if (icon) {
         icon.textContent = STATE.currentTheme === 'dark' ? 'dark_mode' : 'light_mode';
     }
+
+    // 应用当前主题对应的颜色
+    applyColorTokens();
 }
 
 function toggleTheme() {
     STATE.currentTheme = STATE.currentTheme === 'dark' ? 'light' : 'dark';
     applyTheme();
+}
+
+// ============================================================
+// 动态颜色设置（从 config.json 读取 primaryColor）
+// ============================================================
+function hexToRgb(hex) {
+    const h = hex.replace('#', '');
+    return {
+        r: parseInt(h.substring(0, 2), 16),
+        g: parseInt(h.substring(2, 4), 16),
+        b: parseInt(h.substring(4, 6), 16)
+    };
+}
+
+function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(c => {
+        const v = Math.max(0, Math.min(255, Math.round(c)));
+        return v.toString(16).padStart(2, '0');
+    }).join('');
+}
+
+function mixColors(hex1, hex2, ratio) {
+    const a = hexToRgb(hex1);
+    const b = hexToRgb(hex2);
+    return rgbToHex(
+        a.r + (b.r - a.r) * ratio,
+        a.g + (b.g - a.g) * ratio,
+        a.b + (b.b - a.b) * ratio
+    );
+}
+
+/** 判断亮度：返回 0-255，>128 为浅色 */
+function luminance(hex) {
+    const { r, g, b } = hexToRgb(hex);
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+/** 根据主色 hex 计算出亮色/暗色两组令牌，存入 STATE.colorTokens */
+function computeColorTokens(hex) {
+    const lum = luminance(hex);
+
+    const light = {
+        primary: hex,
+        onPrimary: lum > 160 ? '#1a1c20' : '#ffffff',
+        container: mixColors(hex, '#ffffff', 0.85),
+        onContainer: mixColors(hex, '#000000', 0.58),
+        inverse: hex
+    };
+
+    const darkPrimary = mixColors(hex, '#ffffff', 0.45);
+    const dark = {
+        primary: darkPrimary,
+        onPrimary: lum > 160 ? '#1a1c20' : '#000000',
+        container: mixColors(hex, '#000000', 0.55),
+        onContainer: mixColors(hex, '#ffffff', 0.70),
+        inverse: darkPrimary
+    };
+
+    STATE.colorTokens = { light, dark };
+}
+
+/** 把 STATE.colorTokens 中当前主题的颜色写入 CSS 变量 */
+function applyColorTokens() {
+    const tokens = STATE.currentTheme === 'dark'
+        ? STATE.colorTokens.dark
+        : STATE.colorTokens.light;
+    if (!tokens) return;
+
+    const $root = document.documentElement;
+    $root.style.setProperty('--md-sys-color-primary', tokens.primary);
+    $root.style.setProperty('--md-sys-color-on-primary', tokens.onPrimary);
+    $root.style.setProperty('--md-sys-color-primary-container', tokens.container);
+    $root.style.setProperty('--md-sys-color-on-primary-container', tokens.onContainer);
+    $root.style.setProperty('--md-sys-color-inverse-primary', tokens.inverse);
+}
+
+function applyPrimaryColor(hex) {
+    if (!hex || hex === STATE.primaryColor) return;
+    STATE.primaryColor = hex;
+    computeColorTokens(hex);
+    applyColorTokens();
 }
 
 // ============================================================
@@ -90,6 +176,9 @@ async function initSite() {
     }
 
     const cfg = window.SITE_CONFIG;
+
+    // 应用主颜色
+    applyPrimaryColor(cfg.site?.primaryColor);
 
     // 渲染站点名称和描述
     $('#site-name').textContent = cfg.site?.name || 'My Downloads';
@@ -135,16 +224,23 @@ async function initSite() {
 // ============================================================
 async function loadAllProjects() {
     const projectIds = window.SITE_CONFIG?.projects || [];
-    const loads = projectIds.map(async (id) => {
-        try {
-            const res = await fetch(`../file/${id}/main.json`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            STATE.projects[id] = await res.json();
-        } catch (err) {
-            console.warn(`[Main] 加载项目 "${id}" 失败:`, err);
+    const preloaded = window.PROJECTS_DATA || {};
+
+    // 优先从内嵌数据加载
+    for (const id of projectIds) {
+        if (preloaded[id]) {
+            STATE.projects[id] = preloaded[id];
+        } else {
+            // 回退：尝试 fetch（仅在 HTTP 服务器环境下可用）
+            try {
+                const res = await fetch(`../file/${id}/main.json`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                STATE.projects[id] = await res.json();
+            } catch (err) {
+                console.warn(`[Main] 加载项目 "${id}" 失败:`, err);
+            }
         }
-    });
-    await Promise.all(loads);
+    }
 }
 
 // ============================================================

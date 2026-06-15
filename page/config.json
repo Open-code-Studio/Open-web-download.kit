@@ -1,18 +1,19 @@
 {
     "site": {
-        "name": "My Downloads",
+        "name": "Open-web-download.kit",
         "description": "一个 Material Design 3 风格的静态下载站点",
         "language": "zh-CN",
         "theme": {
             "default": "dark",
             "allowToggle": true
-        }
+        },
+        "primaryColor": "#4AA26F"
     },
     "projects": [
         "publish1"
     ],
     "footer": {
-        "copyright": "© 2026 My Downloads. All rights reserved.",
+        "copyright": "© 2026 Open-web-download.kit. All rights reserved.",
         "links": [
             { "label": "GitHub", "url": "https://github.com" }
         ]

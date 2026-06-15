@@ -1,26 +1,26 @@
 /**
- * config.js — 站点配置加载器
- * 读取 page/config.json 并暴露为 window.SITE_CONFIG
+ * config.js — 站点全局配置（内嵌数据，无需 fetch，兼容 file:// 协议）
+ *
+ * 所有可配置项都在这里修改。对应 page/config.json，两者需保持同步。
  */
-window.SITE_CONFIG = null;
-
-(async () => {
-    try {
-        const res = await fetch('config.json');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        window.SITE_CONFIG = await res.json();
-        console.log('[Config] 站点配置已加载', window.SITE_CONFIG);
-    } catch (err) {
-        console.error('[Config] 加载失败，使用默认配置', err);
-        window.SITE_CONFIG = {
-            site: {
-                name: "My Downloads",
-                description: "下载中心",
-                language: "zh-CN",
-                theme: { default: "dark", allowToggle: true }
-            },
-            projects: [],
-            footer: { copyright: "", links: [] }
-        };
+window.SITE_CONFIG = {
+    "site": {
+        "name": "Open-web-download.kit",
+        "description": "一个 Material Design 3 风格的静态下载站点",
+        "language": "zh-CN",
+        "theme": {
+            "default": "dark",
+            "allowToggle": true
+        },
+        "primaryColor": "#4AA26F"
+    },
+    "projects": [
+        "publish1"
+    ],
+    "footer": {
+        "copyright": "© 2026 Open-web-download.kit. All rights reserved.",
+        "links": [
+            { "label": "GitHub", "url": "https://github.com" }
+        ]
     }
-})();
+};
